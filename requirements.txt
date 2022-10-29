@@ -1,0 +1,4 @@
+playwright
+selenium
+warnings
+json
