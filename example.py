@@ -9,3 +9,8 @@ print('Name: @reddit_a.i.t.a')
 print('Followers:', user_data['Followers'])
 print('Likes:', user_data['Likes'])
 print('Video Views:', user_data['Video Views'])
+
+print('Name: @reddit_a.i.t.a')
+print('Followers:', pt.get_followers("reddit_a.i.t.a"))
+print('Likes:', pt.get_likes("reddit_a.i.t.a"))
+print('Video Views:', pt.get_video_views("reddit_a.i.t.a"))
