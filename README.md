@@ -26,8 +26,6 @@ No_Comments = json.loads(pt.full_scrape('reddit_a.i.t.a', comments=False))
 With_Comments = pt.full_scrape('reddit_a.i.t.a', comments=True, min_likes=1)
 
 
-
-
 #Individual Scrape - Get individual user data.
 
 # returns 247300.
@@ -46,7 +44,6 @@ No_Comments['Video Views']
 # returns "Comments": {'Example Comment': 1}
 pt.get_video_views('reddit_a.i.t.a')
 With_Comments['Comments']
-
 
 # Hashtag Scrape - Get hashtag data.
 
