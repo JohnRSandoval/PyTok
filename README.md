@@ -62,8 +62,6 @@ print('Comments:', user['Comments'])
 print('Shares:', user['Shares'])
 
 
-
-
 ```
 
 ## Contributing
