@@ -16,19 +16,19 @@ pip install PyTok
 import PyTok as pt
 import json
 
-#Full Scrape - Return all user data.
+# Full Scrape - Get all user data.
 
 # returns '{"Followers": 3183, "Likes": "247200", "Video Views": 3079200}'
 No_Comments = json.loads(pt.full_scrape('reddit_a.i.t.a', comments=False))
 
-#*COMMENTS CAN TAKE A LONG TIME TO LOAD DEPENDING ON # of VIDEOS*
 # returns full_scrape + comments + comment likes. 
-#'{"Followers": 3183, "Likes": "247200", "Video Views": 3079200, "Comments": {'Example Comment': 1}}'
-# min_likes will default to 0 to show all comments. Comments with likes > or = to the min_likes will return.
+# min_likes will default to 0 to show all comments. Comments with likes > or = to the min_likes will be returned.
 With_Comments = pt.full_scrape('reddit_a.i.t.a', comments=True, min_likes=1)
 
 
-#Individual Scrape - Return individual user data.
+
+
+#Individual Scrape - Get individual user data.
 
 # returns 247300.
 pt.get_likes("reddit_a.i.t.a")
@@ -42,10 +42,30 @@ No_Comments['Followers']
 pt.get_video_views('reddit_a.i.t.a')
 No_Comments['Video Views']
 
-#*COMMENTS CAN TAKE A LONG TIME TO LOAD DEPENDING ON # of VIDEOS*
+## *COMMENTS CAN TAKE A LONG TIME TO LOAD DEPENDING ON # of VIDEOS*
 # returns "Comments": {'Example Comment': 1}
 pt.get_video_views('reddit_a.i.t.a')
-No_Comments['Comments']
+With_Comments['Comments']
+
+
+# Hashtag Scrape - Get hashtag data.
+
+# reutrns 'Username, Video Link, Description' full_scrape returns [likes, comments, shares]
+hashtag_data = json.loads(pt.get_hashtag('fyp', video_count=1, full_scrape=True))
+
+# get the first dataset from the JSON object and set it to user
+user = hashtag_data['1']
+
+# print data for first hashtag in list
+print('Username: @'+ user['Username'])
+print('Video Link:', user['Link'])
+print('Description:', user['Description'])
+print('Likes:', user['Likes'])
+print('Comments:', user['Comments'])
+print('Shares:', user['Shares'])
+
+
+
 
 ```
 

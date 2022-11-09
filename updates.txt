@@ -1,0 +1,6 @@
+1.1.0
+- Added hashtag search function (Load x number of videos with Username, Description, Hashtag List) TO-ADD: Full-Scrape Enablement, Followers, Vid Likes, Comment Amount
+- Added infinite scroll handling for hashtag/user/coment search
+- Added numformat function to format numbers easily.
+- Added format_dict function to format JSON dictionairies easily.
+- Added Full hashtag scraping.

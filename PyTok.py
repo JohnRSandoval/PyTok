@@ -1,24 +1,25 @@
-from pickle import TRUE
+# imports
 from selenium import webdriver
 import time
 import warnings
 import json
 from webdriver_manager.chrome import ChromeDriverManager
-# ignore only deprication warnings
+
+# ignore deprication warnings from selenium
 warnings.filterwarnings("ignore", category=DeprecationWarning)
 
-# add chrome options to the webdriver to mute the browser and launch with adblock.crx plugin enabled.
+# Chrome Arguments, initialize options and arguments
 chrome_options = webdriver.ChromeOptions()
 chrome_options.add_argument("--mute-audio")
 chrome_options.add_argument('--log-level=3')
-# add a chrome option to make the browser headless.
-chrome_options.add_argument("--headless")
+#chrome_options.add_argument("--headless")
+
 # load chrome using playwright
-driver = webdriver.Chrome(ChromeDriverManager(version="106.0.5249.119").install(), options=chrome_options)
+driver = webdriver.Chrome(ChromeDriverManager().install(), options=chrome_options)
 time.sleep(1)
 driver.switch_to.window(driver.window_handles[0])
 
-# create a function that takes a number as an input. If the number has a 'k' * 1000 or 'm' * 1000000, then convert the number to an integer.
+#function to convert string to int, multiples k by 1k, m by 1m
 def convert_to_int(number):
     if 'K' in number:
         number = number.replace('K', '')
@@ -30,12 +31,14 @@ def convert_to_int(number):
         number = int(float(number))
     return number
 
+# global variables
 global_links = []
 
-# create a function titled formatter that takes a number as an input and returns the number as a string with commas. Cannot specify ',' with 's'.
-def formatter(number):
-    return f'{number:,}'    
+# format numbers with commas
+def numformat(number):
+    return format(int(number), ",")    
 
+# returns all video links for a tiktok profile
 def get_video_links(username, load_profile=True):
     global global_links
     if load_profile or load_profile is None:
@@ -45,7 +48,7 @@ def get_video_links(username, load_profile=True):
         global_links.append(x.get_attribute('href'))
     return video_links
 
-# create a function that opens each video link and creates a dictionary of the comments and the number of likes on a comment if the number of likes is over 5. To find the comments, use xpath to locate the p tags with the data-e2e="comment-level-1" attribute. To find the comment likes, use xpath to find the span tags with the data-e2e="comment-like-count" attribute.
+# returns all comments on a tiktok profile
 def get_comments(username, load_profile=True, min_likes=0):
     global global_links
     if load_profile or load_profile is None:
@@ -56,7 +59,7 @@ def get_comments(username, load_profile=True, min_likes=0):
         driver.get(link)
         # implicility wait for page to load
         driver.implicitly_wait(2)
-        scroll_to_bottom()
+        scroll_to_bottom(80)
         comments = driver.find_elements_by_xpath('//p[@data-e2e="comment-level-1"]')
         comment_likes = driver.find_elements_by_xpath('//span[@data-e2e="comment-like-count"]')
         for i in range(len(comments)):
@@ -64,7 +67,7 @@ def get_comments(username, load_profile=True, min_likes=0):
                 comment_dict[comments[i].text] = convert_to_int(comment_likes[i].text)
     return comment_dict
 
-# create a function that loads a tiktok profile page and returns the number of video views. Use xpath to locate the strong tags with the data-e2e"video-views" attribute. Sum the total number of views.
+# returns total video views for a tiktok profile
 def get_video_views(username, load_profile=True):
     if load_profile or load_profile is None:
         load_tiktok_profile(username)
@@ -74,51 +77,112 @@ def get_video_views(username, load_profile=True):
         total_views += convert_to_int(view.text)
     return total_views
 
-# create a function that scrolls till it reaches the bottom of the page. If the page is inifinite scroll, then stop after 5 scrolls.+
-def scrolling():
-    scroll = 0
-    while scroll < 5:
-        scroll_to_bottom()
-        scroll += 1
 
+def scroll_to_bottom(scrolltime=0):
+    scrolltime = round(scrolltime/15)
+    if scrolltime > 0:
+        for i in range(scrolltime):
+            driver.execute_script("window.scrollTo(0, document.body.scrollHeight);")
+            time.sleep(1)
 
-# create a function that scrolls and loops until it reaches the bottom of the page.
-def scroll_to_bottom():
-        lenOfPage = driver.execute_script("window.scrollTo(0, document.body.scrollHeight);var lenOfPage=document.body.scrollHeight;return lenOfPage;")
-        match=False
-        scroll = 0
-        while(match==False):
-            lastCount = lenOfPage
-            time.sleep(.5)
-            scroll += 1
-            lenOfPage = driver.execute_script("window.scrollTo(0, document.body.scrollHeight);var lenOfPage=document.body.scrollHeight;return lenOfPage;")
-            if lastCount==lenOfPage:
-                match=True
-
-# create a function that takes a tiktok username as an input and loads the tiktok profile page.
+# loads a tiktok profile in selenium and scrolls to the bottom of the page to load all videos
 def load_tiktok_profile(username):
     driver.get("https://www.tiktok.com/@{}?lang=en".format(username))
     driver.implicitly_wait(1)
-    scroll_to_bottom()
+    page_scroll()
 
-# create a function that loads a tiktok profile page and returns the number of followers. Use xpath with the data-e2e"followers-count" attribute.
+# loads each video in the hashtag list and gets the likes, comments, and shares
+def full_hashtag_getter_done():
+    global global_links
+    likes = []
+    comments = []
+    shares = []
+    for link in global_links:
+        driver.get(link)
+        driver.implicitly_wait(2)
+        likes.append(numformat(convert_to_int(driver.find_element_by_xpath('//strong[@data-e2e="like-count"]').text)))
+        comments.append(numformat(convert_to_int(driver.find_element_by_xpath('//strong[@data-e2e="comment-count"]').text)))
+        shares.append(numformat(convert_to_int(driver.find_element_by_xpath('//strong[@data-e2e="share-count"]').text)))
+    return likes, comments, shares
+
+# main get_hashtag function; returns all hashtag data, user, links, description, full_scrape[likes, comments, shares]
+def get_hashtag(hashtag, video_count=15, full_scrape=False):
+    global global_links
+    links = load_hashtag(hashtag, video_count)
+    usernames, description = load_hashtag_username_desc(video_count)
+    likes, comments, shares = '', '', ''
+    if full_scrape:
+        global_links = links
+        likes, comments, shares = full_hashtag_getter_done()
+    fd = json.dumps(format_dict(usernames, links, description, likes, comments, shares))
+    return fd
+
+
+# returns username list for a hashtag search
+def load_hashtag_username_desc(video_count=15):
+    usernames = driver.find_elements_by_xpath('//h4[@data-e2e="challenge-item-username"]')
+    desc = driver.find_elements_by_xpath('//a[contains(@title, "#")]')
+    user_list = [] 
+    desc_list = []
+    for i in range(video_count):
+        user_list.append(usernames[i].text)
+        desc_list.append(desc[i].get_attribute('title'))
+    return user_list, desc_list
+
+# loads a hashtag in selenium and uses scroll to bottom to x# videos
+def load_hashtag(hashtag, video_count):
+    driver.get("https://www.tiktok.com/tag/{}".format(hashtag))
+    driver.implicitly_wait(1.5)
+    if round(video_count/15) > 0:
+        scroll_to_bottom(video_count)
+    video_links = driver.find_elements_by_xpath('//a[contains(@href, "video")]')
+    video_list = []
+    real_count = -1
+    for i in range(video_count):
+        real_count += 1
+        if 'StyledLink' in video_links[real_count].get_attribute('class'):
+            real_count += 1
+        video_list.append(video_links[real_count].get_attribute('href'))
+    return video_list
+
+# Format Dictionary for JSON
+def format_dict(usernames, links, desc, likes, comments, shares):
+    fd = {}
+    for i in range(len(usernames)):
+        if likes != '' or comments != '' or shares != '':
+            fd[i+1] = {"Username": usernames[i], "Link": links[i], 'Description': desc[i], 'Likes': likes[i], 'Comments': comments[i], 'Shares': shares[i]}
+        else:
+            fd[i+1] = {"Username": usernames[i], "Link": links[i], 'Description': desc[i]}
+    return fd
+
+
+# scrolls to the bottom of the tiktok profile page until all videos are loaded
+def page_scroll():
+    lenOfPage = driver.execute_script("window.scrollTo(0, document.body.scrollHeight);var lenOfPage=document.body.scrollHeight;return lenOfPage;")
+    match=False
+    while(match==False):
+        lastCount = lenOfPage
+        time.sleep(1)
+        lenOfPage = driver.execute_script("window.scrollTo(0, document.body.scrollHeight);var lenOfPage=document.body.scrollHeight;return lenOfPage;")
+        if lastCount==lenOfPage:
+            match=True
+
+# returns total followers for a tiktok profile
 def get_followers(username, load_profile=True):
     if load_profile or load_profile is None:
         load_tiktok_profile(username)
     followers = driver.find_element_by_xpath('//strong[@data-e2e="followers-count"]').text
     return convert_to_int(followers)
 
-# create a function that takes a list and returns then as in a json format.
-def list_to_json(list):
-    return json.dumps(list)
 
-# create a function that loads a tiktok profile page and returns the number of likes. Use xpath to find the strong tag with the data-e2e"likes-count" attribute.
+# returns total likes for a tiktok profile
 def get_likes(username, load_profile=True):
     if load_profile or load_profile is None:
         load_tiktok_profile(username)
     likes = driver.find_element_by_xpath('//strong[@data-e2e="likes-count"]').text
-    return list_to_json(convert_to_int(likes))
+    return json.dumps(convert_to_int(likes))
 
+# Main Scraping Function for TikTok Profile will return all data.
 def full_scrape(username, comments=False, min_likes=0):
     load_tiktok_profile(username)
     dict= {}
@@ -128,4 +192,4 @@ def full_scrape(username, comments=False, min_likes=0):
     if comments:
         comment_dict = get_comments(username, False, min_likes)
         dict["Comments"] = comment_dict
-    return(list_to_json(dict))
+    return(json.dumps(dict))
